@@ -1,0 +1,21 @@
+[
+  {
+    "host": "Users",
+    "username": "testUser",
+    "email": "testUser@test.com",
+    "home": {
+      "dir": {
+        "override": "local/root/run/"
+      }
+    },
+    "accept": {
+      "password": "testpass"
+    },
+    "actions": {
+      "collect":{
+        "alias": "connectTest",
+        "commands": ["GET -DEL *", "LCOPY -REC %inbox% %inbox%/in"]
+      }
+    }
+  }
+]
