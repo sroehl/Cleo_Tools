@@ -29,10 +29,10 @@ Then you can run by executing: `java -jar HarmonyCSVToJSON.jar`
 - DefaultHomeDir
 - CustomHomeDir
 - WhitelistIP
-- CreateCollectName
-- CreateReceiveName
-- ActionCollect
-- ActionReceive
+- CreateCollectName - Name of collect action
+- CreateReceiveName - Name of receive action
+- ActionCollect - Collect action commands (use '|' or ';' between commands)
+- ActionReceive - Receive action commands (use '|' or ';' between commands)
 - Schedule_Send
 - Schedule_Receive
 - Hours

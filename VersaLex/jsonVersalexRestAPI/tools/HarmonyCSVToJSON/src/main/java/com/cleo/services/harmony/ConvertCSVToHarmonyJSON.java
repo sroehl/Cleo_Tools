@@ -103,7 +103,11 @@ public class ConvertCSVToHarmonyJSON {
 		}
         authFromFile.put("email", mailboxCSV.getEmail());
 
-		authFromFile.put("actions", createActions(mailboxCSV.getCreateCollectName(), mailboxCSV.getActionCollect().split("\\|"), mailboxCSV.getCreateReceiveName(), mailboxCSV.getActionReceive().split("\\|")));
+		String actionSeparatorRegex = "[\\|;]";
+		authFromFile.put("actions", createActions(mailboxCSV.getCreateCollectName(),
+						mailboxCSV.getActionCollect().split(actionSeparatorRegex),
+						mailboxCSV.getCreateReceiveName(),
+						mailboxCSV.getActionReceive().split(actionSeparatorRegex)));
         
         System.out.println(gson.toJson(authFromFile));
         return gson.toJsonTree(authFromFile).getAsJsonObject();
