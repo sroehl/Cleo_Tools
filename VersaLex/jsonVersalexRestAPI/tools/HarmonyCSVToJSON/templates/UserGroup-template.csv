@@ -1,0 +1,2 @@
+UserAlias,FolderPath,HomeDir,DownloadFolder,UploadFolder,OtherFolder,ArchiveSentbox,ArchiveReceivedbox,FTP,SSHFTP,HTTP,Access
+Users_Batch-1,,%HarmonyRoot%local/root/Process/%username%,./,./,test/one;test/two,default,default,Yes,No,Yes,ReadOnly
