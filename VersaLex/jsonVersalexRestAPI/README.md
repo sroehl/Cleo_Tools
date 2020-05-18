@@ -8,6 +8,7 @@ To compile you just need to run `mvn`
 To run it you will need to run `java -jar JsonToVersalexRestAPI` with the following usage
 ```usage: JsonToVersalexRESTAPI
        --file <FILE>           JSON file containing hosts
+       --generate-pass         Generate Passwords for users automatically
     -h,--hostname <HOSTNAME>   VersaLex hostname
        --help
     -p,--password <PASSWORD>   Password

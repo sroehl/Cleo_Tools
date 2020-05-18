@@ -6,16 +6,22 @@ import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class JsonVersalexRestAPI {
   private REST restClient;
   private Gson gson;
+
+  private boolean generatePass;
 
   public enum  ConnectionType {
     connection,
@@ -41,6 +47,30 @@ public class JsonVersalexRestAPI {
           restClient.createAction(gson.toJson(actionJson));
         }
       }
+    }
+  }
+
+  public static LinkedTreeMap generatePasswordForUser(LinkedTreeMap connection) {
+    Object accept = connection.get("accept");
+    if (accept != null) {
+      String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+      SecureRandom random = new SecureRandom();
+      String pass = random.ints(0, characters.length())
+                          .limit(20)
+                          .mapToObj(i -> String.valueOf(characters.charAt(i)))
+                          .collect(Collectors.joining());
+      ((LinkedTreeMap)accept).put("password", pass);
+      connection.put("accept", accept);
+    }
+    return connection;
+  }
+
+  public static void writePassFile(LinkedTreeMap connection) throws IOException {
+    String username = (String)connection.get("username");
+    String password = (String)getSubElement(connection, "accept.password");
+    if (username != null && password != null) {
+      String lineToWrite = username + "," + password + System.lineSeparator();
+      Files.write(Paths.get("userPasswords.csv"), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
     }
   }
 
@@ -126,6 +156,10 @@ public class JsonVersalexRestAPI {
             if (authId != null) {
               // Make user
               connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
+              if (this.generatePass) {
+                connection = generatePasswordForUser(connection);
+                writePassFile(connection);
+              }
               LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
               idHref = (String)((LinkedTreeMap)((LinkedTreeMap)newUser.get("_links")).get("self")).get("href");
               if (actions != null)
@@ -178,8 +212,9 @@ public class JsonVersalexRestAPI {
     return newTreeMap;
   }
 
-  public JsonVersalexRestAPI(REST restClient) {
+  public JsonVersalexRestAPI(REST restClient, boolean generatePass) {
     this.restClient = restClient;
     this.gson = new Gson();
+    this.generatePass = generatePass;
   }
 }
