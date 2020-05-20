@@ -1,9 +1,9 @@
-#Profile Builder Tool Instructions for VersaLex 
+# Profile Builder Tool Instructions for VersaLex 
 (for Harmony or VLTrader, not Gen2)
 
-#####Instructions written for Windows
+##### Instructions written for Windows
 
-##Preparation
+## Preparation
 
 Install and configure Java and Maven
 https://howtodoinjava.com/maven/how-to-install-maven-on-windows/
@@ -28,7 +28,7 @@ Install & license Harmony
 Repository for code:
 https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI
 
-##Build the tool
+## Build the tool
 
 copy repo.sh to C:\
 
@@ -47,7 +47,7 @@ within Git Bash:
 ```
 
 
-##Preparing the .csv
+## Preparing the .csv
 
 Modify the app.properties file and put in the following fields:
 - groupFile: the name of the group file CSV
@@ -66,8 +66,7 @@ You can leave the Password column blank and the program can generate random stro
 
 Make sure the email address is unique for each row.
 
-
-##Running the tool
+## Running the tool
 
 Run the 1st tool to convert the csv to json (from C:\profilebuildertool\):
 
