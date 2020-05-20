@@ -28,8 +28,6 @@ Install & license Harmony
 Repository for code:
 https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI
 
-## Build the tool
-
 copy repo.sh to C:\
 
 copy pbt.sh to C:\
@@ -41,6 +39,9 @@ chmod +x repo.sh
 chmod +x pbt.sh
 ./repo.sh
 ```
+
+## Build the tool
+
 Run the pbt.sh script to get the latest updates of the tool
 
 within Git Bash:
