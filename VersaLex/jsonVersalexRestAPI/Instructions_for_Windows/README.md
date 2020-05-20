@@ -34,15 +34,17 @@ copy repo.sh to C:\
 
 copy pbt.sh to C:\
 
-within Git Bash:
+within Git Bash (just need to run once):
 ```
 cd /c/
 chmod +x repo.sh
 chmod +x pbt.sh
+./repo.sh
 ```
+Run the pbt.sh script to get the latest updates of the tool
+
 within Git Bash:
 ```
-./repo.sh
 ./pbt.sh
 ```
 
