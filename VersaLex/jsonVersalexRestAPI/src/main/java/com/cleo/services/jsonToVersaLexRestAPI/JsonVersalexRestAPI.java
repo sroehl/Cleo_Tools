@@ -65,11 +65,11 @@ public class JsonVersalexRestAPI {
     return connection;
   }
 
-  public static void writePassFile(LinkedTreeMap connection) throws IOException {
+  public static void writePassFile(String host, LinkedTreeMap connection) throws IOException {
     String username = (String)connection.get("username");
     String password = (String)getSubElement(connection, "accept.password");
     if (username != null && password != null) {
-      String lineToWrite = username + "," + password + System.lineSeparator();
+      String lineToWrite = host + "," + username + "," + password + System.lineSeparator();
       Files.write(Paths.get("userPasswords.csv"), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
     }
   }
@@ -155,10 +155,10 @@ public class JsonVersalexRestAPI {
             }
             if (authId != null) {
               // Make user
-              connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
+              String host = (String)connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
               if (this.generatePass) {
                 connection = generatePasswordForUser(connection);
-                writePassFile(connection);
+                writePassFile(host, connection);
               }
               LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
               idHref = (String)((LinkedTreeMap)((LinkedTreeMap)newUser.get("_links")).get("self")).get("href");
