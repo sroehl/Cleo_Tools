@@ -28,9 +28,9 @@ Install & license Harmony
 Repository for code:
 https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI
 
-copy repo.sh to C:\
+copy contents of [repo.sh](repo.sh) to C:\repo.sh
 
-copy pbt.sh to C:\
+copy contents of [pbt.sh](pbt.sh) to C:\repo.sh
 
 within Git Bash (just need to run once):
 ```
