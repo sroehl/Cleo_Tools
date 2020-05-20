@@ -56,7 +56,7 @@ public class JsonVersalexRestAPI {
   public static LinkedTreeMap generatePasswordForUser(LinkedTreeMap connection) {
     Object accept = connection.get("accept");
     if (accept != null) {
-      String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+      String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()-_=+[{]}\\|;:\'\"<.>/?";
       SecureRandom random = new SecureRandom();
       String pass = random.ints(0, characters.length())
                           .limit(20)
