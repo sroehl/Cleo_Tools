@@ -44,6 +44,9 @@ public class JsonVersalexRestAPI {
           if (connectionType == ConnectionType.authenticator)
             actionJson.put(ConnectionType.authenticator.toString(), makeAuthLink(idHref));
           actionJson.put(ConnectionType.connection.toString(), makeConnectionLink(idHref));
+          String schedule = (String) action.getOrDefault("schedule", "");
+          if (!schedule.isEmpty() && !schedule.equalsIgnoreCase("none") && !schedule.equalsIgnoreCase("no"))
+            actionJson.put("schedule", schedule);
           restClient.createAction(gson.toJson(actionJson));
         }
       }

@@ -1,17 +1,13 @@
 package com.cleo.services.harmony;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -21,7 +17,6 @@ import com.google.gson.internal.LinkedTreeMap;
 import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
-import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
 import com.opencsv.exceptions.CsvException;
 
 
@@ -29,23 +24,15 @@ public class ConvertCSVToHarmonyJSON {
 
 	public static Gson gson = new Gson();
 	
-	public static void main(String[] args) throws FileNotFoundException, IOException, CsvException {
-
-
-
+	public static void main(String[] args) throws IOException, CsvException {
 		new ApplicationProperties().readProperties();
 		System.out.println("Finished reading the app config file...");
-		 /*Map<String, String> values =  new CSVReaderHeaderAware(new FileReader(ApplicationProperties.appProps.getProperty("csvFile"))).readMap();
-		 for (Map.Entry<String, String> entry : values.entrySet()) {
-			    System.out.println(entry.getKey() + "/" + entry.getValue());
-		}*/
 		
         JsonArray jsonArr = new JsonArray();
         
 		CSVReader grpReader = new CSVReader(new FileReader(ApplicationProperties.appProps.getProperty("groupFile")));
 		List<String[]> grpElements = grpReader.readAll();
 		for(String[] line: grpElements) {
-			System.out.println(line[0]);
         	if(!line[0].equals("UserAlias"))
         		jsonArr.add(contructUsrGrpJSON(line));
         }
@@ -65,7 +52,6 @@ public class ConvertCSVToHarmonyJSON {
         FileWriter writer = new FileWriter(new File(ApplicationProperties.appProps.getProperty("jsonFile")));
         gson.toJson(jsonArr, writer);
         writer.close();
-        //System.out.println(gson.toJson(jsonArr));
 	}
 
 	private static JsonObject  contructMailboxJSON(MailboxCSV mailboxCSV) throws JsonSyntaxException, IOException {
@@ -82,7 +68,6 @@ public class ConvertCSVToHarmonyJSON {
         else {
         	((LinkedTreeMap)((LinkedTreeMap)authFromFile.get("home")).get("dir")).put("override", mailboxCSV.getCustomHomeDir());
         }
-        System.out.println(mailboxCSV.getWhitelistIP().isEmpty());
         if(!mailboxCSV.getWhitelistIP().isEmpty()) {
         	ArrayList wl = new ArrayList();
 			for(String ipaddr : mailboxCSV.getWhitelistIP().split(";")) {
@@ -103,22 +88,30 @@ public class ConvertCSVToHarmonyJSON {
 		}
         authFromFile.put("email", mailboxCSV.getEmail());
 
-		String actionSeparatorRegex = "[\\|;]";
-		authFromFile.put("actions", createActions(mailboxCSV.getCreateCollectName(),
-						mailboxCSV.getActionCollect().split(actionSeparatorRegex),
-						mailboxCSV.getCreateReceiveName(),
-						mailboxCSV.getActionReceive().split(actionSeparatorRegex)));
+		authFromFile.put("actions", createActions(mailboxCSV));
         
-        System.out.println(gson.toJson(authFromFile));
         return gson.toJsonTree(authFromFile).getAsJsonObject();
 	}
 
-	private static LinkedTreeMap createActions(String collectAlias, String[] collectCommands, String receiveAlias, String[] receiveCommands) {
+	//private static LinkedTreeMap createActions(String collectAlias, String[] collectCommands, String receiveAlias, String[] receiveCommands) {
+	private static LinkedTreeMap createActions(MailboxCSV mailboxCSV) {
+		String actionSeparatorRegex = "[\\|;]";
+		String collectAlias = mailboxCSV.getCreateCollectName();
+		String[] collectCommands = mailboxCSV.getActionCollect().split(actionSeparatorRegex);
+		String receiveAlias = mailboxCSV.getCreateReceiveName();
+		String[] receiveCommands = mailboxCSV.getActionReceive().split(actionSeparatorRegex);
 		LinkedTreeMap actions = new LinkedTreeMap();
 		if (!collectAlias.equalsIgnoreCase("NA")) {
 			LinkedTreeMap collect = new LinkedTreeMap();
 			collect.put("alias", collectAlias);
 			collect.put("commands", collectCommands);
+			if (!mailboxCSV.getSchedule_Collect().isEmpty() && !mailboxCSV.getSchedule_Collect().equalsIgnoreCase("none")
+							&& !mailboxCSV.getSchedule_Collect().equalsIgnoreCase("no")) {
+				if (mailboxCSV.getSchedule_Collect().equalsIgnoreCase("polling"))
+					collect.put("schedule", "on file continuously");
+				else
+					collect.put("schedule", mailboxCSV.getSchedule_Collect());
+			}
 			actions.put(collectAlias, collect);
 		}
 
@@ -126,6 +119,13 @@ public class ConvertCSVToHarmonyJSON {
 			LinkedTreeMap receive = new LinkedTreeMap();
 			receive.put("alias", receiveAlias);
 			receive.put("commands", receiveCommands);
+			if (!mailboxCSV.getSchedule_Receive().isEmpty() && !mailboxCSV.getSchedule_Receive().equalsIgnoreCase("none")
+							&& !mailboxCSV.getSchedule_Receive().equalsIgnoreCase("no")) {
+				if (mailboxCSV.getSchedule_Receive().equalsIgnoreCase("polling"))
+					receive.put("schedule", "on file continuously");
+				else
+					receive.put("schedule", mailboxCSV.getSchedule_Receive());
+			}
 			actions.put(receiveAlias, receive);
 		}
 

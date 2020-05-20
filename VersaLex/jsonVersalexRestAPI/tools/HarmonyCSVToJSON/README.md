@@ -33,11 +33,8 @@ Then you can run by executing: `java -jar HarmonyCSVToJSON.jar`
 - CreateReceiveName - Name of receive action
 - ActionCollect - Collect action commands (use '|' or ';' between commands)
 - ActionReceive - Receive action commands (use '|' or ';' between commands)
-- Schedule_Send
-- Schedule_Receive
-- Hours
-- Minutes
-- Seconds
+- Schedule_Collect - Can either be "polling", "none/no/empty", or in timed schedule format (for example to run every 5 minutes: `on Su-Sa @00:00/00:05-24:00`
+- Schedule_Receive - Can either be "polling", "none/no/empty", or in timed schedule format (for example to run every 5 minutes: `on Su-Sa @00:00/00:05-24:00`
 - HostNotes
 - MailboxNotes
 - CollectActionNotes

@@ -42,15 +42,9 @@ public class MailboxCSV {
   @Getter@Setter
   public String ActionReceive;
   @Getter@Setter
-  public String Schedule_Send;
+  public String Schedule_Collect;
   @Getter@Setter
   public String Schedule_Receive;
-  @Getter@Setter
-  public String Hours;
-  @Getter@Setter
-  public String Minutes;
-  @Getter@Setter
-  public String Seconds;
   @Getter@Setter
   public String HostNotes;
   @Getter@Setter
