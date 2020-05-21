@@ -11,8 +11,7 @@ Install and configure Java and [Maven](https://howtodoinjava.com/maven/how-to-in
 
 - test by running `mvn -version`
 
-Install Git For Windows (for Git Bash)
-https://www.atlassian.com/git/tutorials/install-git#windows
+Install [Git For Windows](https://www.atlassian.com/git/tutorials/install-git#windows)
 
 - test by launching Git Bash
 
