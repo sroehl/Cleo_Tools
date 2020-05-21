@@ -41,6 +41,7 @@ Run the pbt.sh script to get the latest updates of the tool
 
 within Git Bash:
 ```
+cd /c/
 ./pbt.sh
 ```
 
