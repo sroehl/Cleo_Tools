@@ -1,4 +1,5 @@
 cd /c/git/repo/Cleo_Tools
+git checkout master
 git pull
 cd /c/git/repo/Cleo_Tools/VersaLex/jsonVersalexRestAPI
 mvn
