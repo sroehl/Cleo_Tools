@@ -21,7 +21,7 @@ Install & license Harmony
 
 - Build the config on a local Harmony, then export and import into the Cloud or Agent
 - Start Harmony service
-- In VLNavigator add the administrators group to have system privelege so you have to login to Harmony as administrator with Admin password
+- In VLNavigator add the administrators group to have system privelege so you have to login to Harmony as administrator with default administrative password
 - Start Harmony native UI to open it up
 - Configure %HarmonyRoot% as custom directory macro variable
 
