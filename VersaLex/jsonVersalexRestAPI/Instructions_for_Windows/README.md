@@ -71,6 +71,8 @@ Make sure the email address is unique for each row.
 
 ## Running the tool
 
+Refer to https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI/README.md for more usage.
+
 Run the 1st tool to convert the csv to json (from C:\profilebuildertool\):
 
 `java -jar HarmonyCSVToJSON.jar`
