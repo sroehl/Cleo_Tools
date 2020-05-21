@@ -5,8 +5,7 @@
 
 ## Preparation
 
-Install and configure Java and Maven
-https://howtodoinjava.com/maven/how-to-install-maven-on-windows/
+Install and configure Java and [Maven](https://howtodoinjava.com/maven/how-to-install-maven-on-windows/)
 
 - test by running `java -version`
 
@@ -24,9 +23,6 @@ Install & license Harmony
 - In VLNavigator add the administrators group to have system privelege so you have to login to Harmony as administrator with default administrative password
 - Start Harmony native UI to open it up
 - Configure %HarmonyRoot% as custom directory macro variable
-
-Repository for code:
-https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI
 
 copy contents of [repo.sh](repo.sh) to C:\repo.sh
 
@@ -71,7 +67,7 @@ Make sure the email address is unique for each row.
 
 ## Running the tool
 
-Refer to https://github.com/sroehl/Cleo_Tools/tree/master/VersaLex/jsonVersalexRestAPI/README.md for more usage.
+Please refer to the readme [here](../README.md) for full usage.
 
 Run the 1st tool to convert the csv to json (from C:\profilebuildertool\):
 
