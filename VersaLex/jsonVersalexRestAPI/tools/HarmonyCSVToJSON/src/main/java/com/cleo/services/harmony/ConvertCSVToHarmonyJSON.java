@@ -1,16 +1,23 @@
 package com.cleo.services.harmony;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.cleo.services.harmony.pojo.AS2;
+import com.cleo.services.harmony.pojo.Action;
+import com.cleo.services.harmony.pojo.SFTP;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.internal.LinkedTreeMap;
@@ -23,9 +30,21 @@ import com.opencsv.exceptions.CsvException;
 public class ConvertCSVToHarmonyJSON {
 
 	public static Gson gson = new Gson();
+
+	public static enum  Types {
+		AS2,
+		SFTP,
+		FTP
+	}
 	
 	public static void main(String[] args) throws IOException, CsvException {
+		AS2 as2 = new AS2();
+		as2.alias = "test";
+		as2.accept.requireSecurePort = true;
+		System.out.println(new Gson().toJson(as2));
+		System.exit(0);
 		new ApplicationProperties().readProperties();
+		String mailboxFilename = ApplicationProperties.appProps.getProperty("mailBoxFile");
 		System.out.println("Finished reading the app config file...");
 		
         JsonArray jsonArr = new JsonArray();
@@ -37,21 +56,204 @@ public class ConvertCSVToHarmonyJSON {
         		jsonArr.add(contructUsrGrpJSON(line));
         }
 
-		HeaderColumnNameMappingStrategy mailboxStrategy = new HeaderColumnNameMappingStrategy<>();
-		mailboxStrategy.setType(MailboxCSV.class);
-		CSVReader reader2 = new CSVReader(new FileReader(ApplicationProperties.appProps.getProperty("mailBoxFile")));
-		CsvToBean csvToBean = new CsvToBean();
-		csvToBean.setCsvReader(reader2);
-		csvToBean.setMappingStrategy(mailboxStrategy);
-		List<MailboxCSV> mailboxCSVList = csvToBean.parse();
+		List<String> lines = Files.readAllLines(Paths.get(mailboxFilename));
+		if (lines.size() > 0 && (lines.get(0).contains("type") || lines.get(0).contains("Type"))) {
+			/*List<ClientCSV> clientHosts = parseClientFile(ApplicationProperties.appProps.getProperty("mailBoxFile"));
+			if (clientHosts != null) {
+				for (ClientCSV clientHost : clientHosts) {
+					if ()
+				}
+			}*/
+			String type = getFileType(mailboxFilename);
+			if (type.equalsIgnoreCase(Types.AS2.name())) {
+				List<JsonElement> as2Jsons = createAS2Hosts(mailboxFilename);
+				for (JsonElement as2Host : as2Jsons) {
+					jsonArr.add(as2Host);
+				}
+			} else if (type.equalsIgnoreCase(Types.SFTP.name())) {
+				List<JsonObject> ftpJsons = createSFTPHosts(mailboxFilename);
+				for (JsonObject ftpHost : ftpJsons) {
+					jsonArr.add(ftpHost);
+				}
+			} else if (type.equalsIgnoreCase(Types.FTP.name())) {
+				List<JsonObject> sftpJsons = createFTPHosts(mailboxFilename);
+				for (JsonObject sftpHost : sftpJsons) {
+					jsonArr.add(sftpHost);
+				}
+			} else {
+				System.out.println("Invalid type specified: " + type);
+			}
+		} else {
+			HeaderColumnNameMappingStrategy mailboxStrategy = new HeaderColumnNameMappingStrategy<>();
+			mailboxStrategy.setType(MailboxCSV.class);
+			CSVReader reader2 = new CSVReader(new FileReader(mailboxFilename));
+			CsvToBean csvToBean = new CsvToBean();
+			csvToBean.setCsvReader(reader2);
+			csvToBean.setMappingStrategy(mailboxStrategy);
+			List<MailboxCSV> mailboxCSVList = csvToBean.parse();
 
-        for(MailboxCSV mailboxCSV: mailboxCSVList) {
-			jsonArr.add(contructMailboxJSON(mailboxCSV));
-        }
+			for (MailboxCSV mailboxCSV : mailboxCSVList) {
+				jsonArr.add(contructMailboxJSON(mailboxCSV));
+			}
+		}
         
         FileWriter writer = new FileWriter(new File(ApplicationProperties.appProps.getProperty("jsonFile")));
         gson.toJson(jsonArr, writer);
         writer.close();
+	}
+
+	private static String getFileType(String filename) throws FileNotFoundException {
+		HeaderColumnNameMappingStrategy mailboxStrategy = new HeaderColumnNameMappingStrategy<>();
+		mailboxStrategy.setType(ClientCSV.class);
+		CSVReader reader2 = new CSVReader(new FileReader(filename));
+		CsvToBean csvToBean = new CsvToBean();
+		csvToBean.setCsvReader(reader2);
+		csvToBean.setMappingStrategy(mailboxStrategy);
+		List<ClientCSV> clientCsvList = csvToBean.parse();
+		String type = null;
+		for (ClientCSV clientHost : clientCsvList) {
+			if (type == null) {
+				type = clientHost.getType();
+			} else {
+				if (!clientHost.getType().equalsIgnoreCase(type)) {
+					System.err.println("All hosts must be the same type");
+					System.exit(-1);
+				}
+			}
+		}
+		return type;
+	}
+
+	private static List parseClientFile(String filename, Types type) {
+		HeaderColumnNameMappingStrategy mailboxStrategy = new HeaderColumnNameMappingStrategy<>();
+		if (type.equals(Types.AS2))
+			mailboxStrategy.setType(AS2CSV.class);
+		else if (type.equals(Types.SFTP))
+			mailboxStrategy.setType(SFTPCSV.class);
+		else if (type.equals(Types.FTP))
+			mailboxStrategy.setType(FTPCSV.class);
+		CSVReader reader2 = null;
+		try {
+			reader2 = new CSVReader(new FileReader(filename));
+		} catch (FileNotFoundException e) {
+			return new ArrayList<>();
+		}
+		CsvToBean csvToBean = new CsvToBean();
+		csvToBean.setCsvReader(reader2);
+		csvToBean.setMappingStrategy(mailboxStrategy);
+		return csvToBean.parse();
+	}
+
+	protected static List<JsonElement> createAS2Hosts(String filename) {
+		Gson gson = new Gson();
+		ArrayList<JsonElement> hosts = new ArrayList<>();
+		List<AS2CSV> as2CSVList = parseClientFile(filename, Types.AS2);
+		for (AS2CSV csv : as2CSVList) {
+			AS2 as2Host = new AS2();
+			as2Host.alias = csv.getAlias();
+			as2Host.connect.url = csv.getUrl();
+			as2Host.localName = csv.getAS2From();
+			as2Host.partnerName = csv.getAS2To();
+			as2Host.outgoing.subject = csv.getSubject();
+			as2Host.outgoing.encrypt = Boolean.valueOf(csv.getEncrypted());
+			as2Host.outgoing.sign = Boolean.valueOf(csv.getSigned());
+			as2Host.outgoing.receipt.type = csv.getReceipt_type();
+			as2Host.outgoing.receipt.sign = Boolean.valueOf(csv.getReceipt_sign());
+			as2Host.outgoing.storage.outbox = csv.getOutbox();
+			as2Host.outgoing.storage.sentbox = csv.getSentbox();
+			as2Host.incoming.storage.inbox = csv.getInbox();
+			as2Host.incoming.storage.receivedbox = csv.getReceivedbox();
+			ArrayList<Action> actions = new ArrayList<>();
+			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
+				&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
+				Action sendAction = new Action();
+				sendAction.alias = csv.getCreateSendName();
+				sendAction.commands = csv.getActionSend();
+				actions.add(sendAction);
+			}
+			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
+							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
+				Action recAction = new Action();
+				recAction.alias = csv.getCreateReceiveName();
+				recAction.commands = csv.getActionReceive();
+				actions.add(recAction);
+			}
+			as2Host.actions = actions.toArray(new Action[]{});
+			hosts.add(gson.toJsonTree(as2Host));
+		}
+		return hosts;
+	}
+
+	protected static List<JsonElement> createSFTPHosts(String filename) {
+		Gson gson = new Gson();
+		ArrayList<JsonElement> hosts = new ArrayList<>();
+		List<SFTPCSV> as2CSVList = parseClientFile(filename, Types.SFTP);
+		for (SFTPCSV csv : as2CSVList) {
+			SFTP sftpHost = new SFTP();
+			sftpHost.alias = csv.getAlias();
+			sftpHost.connect.host = csv.getHost();
+			sftpHost.connect.port = csv.getPort();
+			sftpHost.connect.username = csv.getUsername();
+			sftpHost.connect.password = csv.getPassword();
+			sftpHost.outgoing.storage.outbox = csv.getOutbox();
+			sftpHost.outgoing.storage.sentbox = csv.getSentbox();
+			sftpHost.incoming.storage.inbox = csv.getInbox();
+			sftpHost.incoming.storage.receivedbox = csv.getReceivedbox();
+			ArrayList<Action> actions = new ArrayList<>();
+			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
+							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
+				Action sendAction = new Action();
+				sendAction.alias = csv.getCreateSendName();
+				sendAction.commands = csv.getActionSend();
+				actions.add(sendAction);
+			}
+			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
+							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
+				Action recAction = new Action();
+				recAction.alias = csv.getCreateReceiveName();
+				recAction.commands = csv.getActionReceive();
+				actions.add(recAction);
+			}
+			sftpHost.actions = actions.toArray(new Action[]{});
+			hosts.add(gson.toJsonTree(sftpHost));
+		}
+		return hosts;
+	}
+
+	protected static List<JsonElement> createFTPHosts(String filename) {
+		Gson gson = new Gson();
+		ArrayList<JsonElement> hosts = new ArrayList<>();
+		List<FTPCSV> ftpCSVList = parseClientFile(filename, Types.FTP);
+		for (FTPCSV csv : ftpCSVList) {
+			SFTP ftpHost = new SFTP();
+			ftpHost.alias = csv.getAlias();
+			ftpHost.connect.host = csv.getHost();
+			ftpHost.connect.port = csv.getPort();
+			ftpHost.connect.username = csv.getUsername();
+			ftpHost.connect.password = csv.getPassword();
+			ftpHost.outgoing.storage.outbox = csv.getOutbox();
+			ftpHost.outgoing.storage.sentbox = csv.getSentbox();
+			ftpHost.incoming.storage.inbox = csv.getInbox();
+			ftpHost.incoming.storage.receivedbox = csv.getReceivedbox();
+			ArrayList<Action> actions = new ArrayList<>();
+			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
+							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
+				Action sendAction = new Action();
+				sendAction.alias = csv.getCreateSendName();
+				sendAction.commands = csv.getActionSend();
+				actions.add(sendAction);
+			}
+			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
+							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
+				Action recAction = new Action();
+				recAction.alias = csv.getCreateReceiveName();
+				recAction.commands = csv.getActionReceive();
+				actions.add(recAction);
+			}
+			ftpHost.actions = actions.toArray(new Action[]{});
+			hosts.add(gson.toJsonTree(ftpHost));
+		}
+		return hosts;
 	}
 
 	private static JsonObject  contructMailboxJSON(MailboxCSV mailboxCSV) throws JsonSyntaxException, IOException {
