@@ -18,9 +18,9 @@ public class FTPCSV extends ClientCSV{
   @Getter@Setter
   private String ChannelMode;
   @Getter@Setter
-  private String ActiveLowPort;
+  private int ActiveLowPort;
   @Getter@Setter
-  private String ActiveHighPort;
+  private int ActiveHighPort;
   @Getter@Setter
   public String CreateSendName;
   @Getter@Setter

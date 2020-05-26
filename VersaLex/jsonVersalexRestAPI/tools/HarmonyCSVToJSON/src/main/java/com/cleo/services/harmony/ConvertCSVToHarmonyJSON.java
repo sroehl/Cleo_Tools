@@ -13,6 +13,7 @@ import java.util.List;
 import com.cleo.services.harmony.pojo.AS2;
 import com.cleo.services.harmony.pojo.Action;
 import com.cleo.services.harmony.pojo.SFTP;
+import com.cleo.services.harmony.pojo.FTP;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
@@ -71,14 +72,14 @@ public class ConvertCSVToHarmonyJSON {
 					jsonArr.add(as2Host);
 				}
 			} else if (type.equalsIgnoreCase(Types.SFTP.name())) {
-				List<JsonObject> ftpJsons = createSFTPHosts(mailboxFilename);
-				for (JsonObject ftpHost : ftpJsons) {
+				List<JsonElement> ftpJsons = createSFTPHosts(mailboxFilename);
+				for (JsonElement ftpHost : ftpJsons) {
 					jsonArr.add(ftpHost);
 				}
 			} else if (type.equalsIgnoreCase(Types.FTP.name())) {
-				List<JsonObject> sftpJsons = createFTPHosts(mailboxFilename);
-				for (JsonObject sftpHost : sftpJsons) {
-					jsonArr.add(sftpHost);
+				List<JsonElement> ftpJsons = createFTPHosts(mailboxFilename);
+				for (JsonElement ftpHost : ftpJsons) {
+					jsonArr.add(ftpHost);
 				}
 			} else {
 				System.out.println("Invalid type specified: " + type);
@@ -225,12 +226,16 @@ public class ConvertCSVToHarmonyJSON {
 		ArrayList<JsonElement> hosts = new ArrayList<>();
 		List<FTPCSV> ftpCSVList = parseClientFile(filename, Types.FTP);
 		for (FTPCSV csv : ftpCSVList) {
-			SFTP ftpHost = new SFTP();
+			FTP ftpHost = new FTP();
 			ftpHost.alias = csv.getAlias();
 			ftpHost.connect.host = csv.getHost();
 			ftpHost.connect.port = csv.getPort();
 			ftpHost.connect.username = csv.getUsername();
 			ftpHost.connect.password = csv.getPassword();
+			ftpHost.connect.defaultContentType = csv.getDataType();
+			ftpHost.connect.dataChannel.mode = csv.getChannelMode();
+			ftpHost.connect.dataChannel.lowPort = csv.getActiveLowPort();
+			ftpHost.connect.dataChannel.highPort = csv.getActiveHighPort();
 			ftpHost.outgoing.storage.outbox = csv.getOutbox();
 			ftpHost.outgoing.storage.sentbox = csv.getSentbox();
 			ftpHost.incoming.storage.inbox = csv.getInbox();

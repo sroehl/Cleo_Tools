@@ -19,6 +19,8 @@ public class FTP {
     public String host;
     public int port;
     public String username;
+    public String password;
+    public String defaultContentType;
     public DataChannel dataChannel;
 
     public class DataChannel {
