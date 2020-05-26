@@ -1,0 +1,1 @@
+type,alias,inbox,outbox,sentbox,receivedbox,url,AS2From,AS2To,Subject,https,encrypted,signed,receipt,receipt_sign,receipt_type,CreateSendName,CreateReceiveName,ActionSend,ActionReceive,Schedule_Send,Schedule_Receive
