@@ -23,7 +23,7 @@ public class JsonVersalexRestAPI {
 
   private boolean generatePass;
 
-  public enum  ConnectionType {
+  public enum ConnectionType {
     connection,
     authenticator
   }
@@ -59,18 +59,18 @@ public class JsonVersalexRestAPI {
       String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()-_=+[{]}\\|;:\'\"<.>/?";
       SecureRandom random = new SecureRandom();
       String pass = random.ints(0, characters.length())
-                          .limit(20)
-                          .mapToObj(i -> String.valueOf(characters.charAt(i)))
-                          .collect(Collectors.joining());
-      ((LinkedTreeMap)accept).put("password", pass);
+              .limit(20)
+              .mapToObj(i -> String.valueOf(characters.charAt(i)))
+              .collect(Collectors.joining());
+      ((LinkedTreeMap) accept).put("password", pass);
       connection.put("accept", accept);
     }
     return connection;
   }
 
   public static void writePassFile(String host, LinkedTreeMap connection) throws IOException {
-    String username = (String)connection.get("username");
-    String password = (String)getSubElement(connection, "accept.password");
+    String username = (String) connection.get("username");
+    String password = (String) getSubElement(connection, "accept.password");
     if (username != null && password != null) {
       String lineToWrite = host + "," + username + "," + password + System.lineSeparator();
       Files.write(Paths.get("userPasswords.csv"), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
@@ -93,37 +93,37 @@ public class JsonVersalexRestAPI {
   public void deleteActions(LinkedTreeMap connection) {
     ArrayList actions = (ArrayList) getSubElement(connection, "_links.actions");
     for (int i = 0; i < actions.size(); i++) {
-      LinkedTreeMap action = (LinkedTreeMap)actions.get(i);
-      String href = (String)action.get("href");
+      LinkedTreeMap action = (LinkedTreeMap) actions.get(i);
+      String href = (String) action.get("href");
       restClient.delete(href);
     }
   }
 
   /*
-  * This is used to create JSON that looks like:
-  * "authenticator": {
-  *   "href": <auth_href>,
-  *   "user": {
-  *     "href": <user_href>
-  *    }
-  *   }
-  */
+   * This is used to create JSON that looks like:
+   * "authenticator": {
+   *   "href": <auth_href>,
+   *   "user": {
+   *     "href": <user_href>
+   *    }
+   *   }
+   */
   public LinkedTreeMap makeAuthLink(String userHref) {
     LinkedTreeMap userTreeMap = new LinkedTreeMap();
     userTreeMap.put("href", userHref);
     LinkedTreeMap authTreeMap = new LinkedTreeMap();
     authTreeMap.put("user", userTreeMap);
-    authTreeMap.put("href", userHref.substring(0,userHref.indexOf("/users/")));
+    authTreeMap.put("href", userHref.substring(0, userHref.indexOf("/users/")));
     LinkedTreeMap topLevelTreeMap = new LinkedTreeMap();
     topLevelTreeMap.put("authenticator", authTreeMap);
     return authTreeMap;
   }
 
   /*
-  * This is used to create JSON that looks like:
-  * "connection": {
-  *   "href": <conn_href>
-  * }
+   * This is used to create JSON that looks like:
+   * "connection": {
+   *   "href": <conn_href>
+   * }
    */
   public LinkedTreeMap makeConnectionLink(String connHref) {
     LinkedTreeMap connectionTreeMap = new LinkedTreeMap();
@@ -138,7 +138,16 @@ public class JsonVersalexRestAPI {
     String idHref = null;
     for (LinkedTreeMap connection : connectionEntries) {
       try {
-        LinkedTreeMap actions = (LinkedTreeMap)connection.get("actions");
+        LinkedTreeMap actions;
+        if (connection.get("actions") instanceof ArrayList) {
+          ArrayList<LinkedTreeMap> arrayActions = (ArrayList) connection.get("actions");
+          actions = new LinkedTreeMap();
+          for (LinkedTreeMap arrayActionMap : arrayActions) {
+            actions.put(arrayActionMap.get("alias"), arrayActionMap);
+          }
+        } else {
+          actions = (LinkedTreeMap) connection.get("actions");
+        }
         if (actions != null) {
           connection.remove("actions");
         }
@@ -151,20 +160,20 @@ public class JsonVersalexRestAPI {
               LinkedTreeMap authFromFile = fixIntDouble(gson.fromJson(Resources.toString(Resources.getResource("authenticator_bare.txt"), Charsets.UTF_8), LinkedTreeMap.class));
               authFromFile.put("alias", connection.get("host"));
               LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(authFromFile));
-              authId = (String)newAuth.get("id");
+              authId = (String) newAuth.get("id");
             }
             if (authenticatorsResponse.getCount() == 1) {
-              authId = (String)((LinkedTreeMap)authenticatorsResponse.getResources().get(0)).get("id");
+              authId = (String) ((LinkedTreeMap) authenticatorsResponse.getResources().get(0)).get("id");
             }
             if (authId != null) {
               // Make user
-              String host = (String)connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
+              String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
               if (this.generatePass) {
                 connection = generatePasswordForUser(connection);
                 writePassFile(host, connection);
               }
               LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
-              idHref = (String)((LinkedTreeMap)((LinkedTreeMap)newUser.get("_links")).get("self")).get("href");
+              idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newUser.get("_links")).get("self")).get("href");
               if (actions != null)
                 createActions(actions, idHref, ConnectionType.authenticator);
               System.out.println("Created " + newUser.get("username") + " with ID: " + newUser.get("id"));
@@ -176,14 +185,16 @@ public class JsonVersalexRestAPI {
           }
         } else if (connection.get("type").equals("nativeUser")) {
           LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(fixIntDouble(connection)));
-          idHref = (String)((LinkedTreeMap)((LinkedTreeMap)newAuth.get("_links")).get("self")).get("href");
+          idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newAuth.get("_links")).get("self")).get("href");
           if (actions != null)
             createActions(actions, idHref, ConnectionType.authenticator);
           System.out.println("Created " + newAuth.get("alias") + " with ID: " + newAuth.get("id"));
         } else {
           //Make connection (normal host)
+          connection = fixIntDouble(connection);
           LinkedTreeMap newconnection = restClient.createConnection(gson.toJson(connection));
-          idHref = (String)((LinkedTreeMap)((LinkedTreeMap)newconnection.get("_links")).get("self")).get("href");
+          newconnection = fixIntDouble(newconnection);
+          idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newconnection.get("_links")).get("self")).get("href");
           deleteActions(newconnection);
           System.out.println("Created " + newconnection.get("alias") + " with ID: " + newconnection.get("id"));
           if (actions != null)
@@ -198,16 +209,17 @@ public class JsonVersalexRestAPI {
 
   /**
    * Helper method to convert doubles to ints so the scheme matches
+   *
    * @param linkedTreeMap
    * @return
    */
-  public static LinkedTreeMap<String, Object> fixIntDouble(LinkedTreeMap<String, Object>  linkedTreeMap) {
+  public static LinkedTreeMap<String, Object> fixIntDouble(LinkedTreeMap<String, Object> linkedTreeMap) {
     LinkedTreeMap newTreeMap = new LinkedTreeMap();
-    for(Map.Entry<String, Object> entry: linkedTreeMap.entrySet()) {
+    for (Map.Entry<String, Object> entry : linkedTreeMap.entrySet()) {
       if (entry.getValue().getClass().getName().equals("com.google.gson.internal.LinkedTreeMap")) {
         newTreeMap.put(entry.getKey(), fixIntDouble((LinkedTreeMap<String, Object>) entry.getValue()));
       } else if (entry.getValue().getClass().getName().equals("java.lang.Double")) {
-        newTreeMap.put(entry.getKey(), ((Double)entry.getValue()).intValue());
+        newTreeMap.put(entry.getKey(), ((Double) entry.getValue()).intValue());
       } else {
         newTreeMap.put(entry.getKey(), entry.getValue());
       }

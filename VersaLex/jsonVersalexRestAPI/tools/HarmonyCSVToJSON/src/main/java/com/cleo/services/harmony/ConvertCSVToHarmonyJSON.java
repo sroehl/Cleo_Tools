@@ -30,6 +30,8 @@ import com.opencsv.exceptions.CsvException;
 
 public class ConvertCSVToHarmonyJSON {
 
+	public static String actionSeparatorRegex = "[\\|;]";
+
 	public static Gson gson = new Gson();
 
 	public static enum  Types {
@@ -39,32 +41,23 @@ public class ConvertCSVToHarmonyJSON {
 	}
 	
 	public static void main(String[] args) throws IOException, CsvException {
-		AS2 as2 = new AS2();
-		as2.alias = "test";
-		as2.accept.requireSecurePort = true;
-		System.out.println(new Gson().toJson(as2));
-		System.exit(0);
 		new ApplicationProperties().readProperties();
 		String mailboxFilename = ApplicationProperties.appProps.getProperty("mailBoxFile");
 		System.out.println("Finished reading the app config file...");
 		
         JsonArray jsonArr = new JsonArray();
-        
-		CSVReader grpReader = new CSVReader(new FileReader(ApplicationProperties.appProps.getProperty("groupFile")));
-		List<String[]> grpElements = grpReader.readAll();
-		for(String[] line: grpElements) {
-        	if(!line[0].equals("UserAlias"))
-        		jsonArr.add(contructUsrGrpJSON(line));
-        }
+
+        if (ApplicationProperties.appProps.contains("groupFile")) {
+			CSVReader grpReader = new CSVReader(new FileReader(ApplicationProperties.appProps.getProperty("groupFile")));
+			List<String[]> grpElements = grpReader.readAll();
+			for (String[] line : grpElements) {
+				if (!line[0].equals("UserAlias"))
+					jsonArr.add(contructUsrGrpJSON(line));
+			}
+		}
 
 		List<String> lines = Files.readAllLines(Paths.get(mailboxFilename));
 		if (lines.size() > 0 && (lines.get(0).contains("type") || lines.get(0).contains("Type"))) {
-			/*List<ClientCSV> clientHosts = parseClientFile(ApplicationProperties.appProps.getProperty("mailBoxFile"));
-			if (clientHosts != null) {
-				for (ClientCSV clientHost : clientHosts) {
-					if ()
-				}
-			}*/
 			String type = getFileType(mailboxFilename);
 			if (type.equalsIgnoreCase(Types.AS2.name())) {
 				List<JsonElement> as2Jsons = createAS2Hosts(mailboxFilename);
@@ -169,14 +162,14 @@ public class ConvertCSVToHarmonyJSON {
 				&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
 				Action sendAction = new Action();
 				sendAction.alias = csv.getCreateSendName();
-				sendAction.commands = csv.getActionSend();
+				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
 				Action recAction = new Action();
 				recAction.alias = csv.getCreateReceiveName();
-				recAction.commands = csv.getActionReceive();
+				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);
 				actions.add(recAction);
 			}
 			as2Host.actions = actions.toArray(new Action[]{});
@@ -205,14 +198,14 @@ public class ConvertCSVToHarmonyJSON {
 							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
 				Action sendAction = new Action();
 				sendAction.alias = csv.getCreateSendName();
-				sendAction.commands = csv.getActionSend();
+				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);;
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
 				Action recAction = new Action();
 				recAction.alias = csv.getCreateReceiveName();
-				recAction.commands = csv.getActionReceive();
+				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);;
 				actions.add(recAction);
 			}
 			sftpHost.actions = actions.toArray(new Action[]{});
@@ -245,14 +238,14 @@ public class ConvertCSVToHarmonyJSON {
 							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
 				Action sendAction = new Action();
 				sendAction.alias = csv.getCreateSendName();
-				sendAction.commands = csv.getActionSend();
+				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);;
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
 				Action recAction = new Action();
 				recAction.alias = csv.getCreateReceiveName();
-				recAction.commands = csv.getActionReceive();
+				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);;
 				actions.add(recAction);
 			}
 			ftpHost.actions = actions.toArray(new Action[]{});
