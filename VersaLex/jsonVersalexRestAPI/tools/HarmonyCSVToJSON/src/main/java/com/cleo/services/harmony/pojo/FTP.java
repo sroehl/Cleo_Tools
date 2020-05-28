@@ -27,7 +27,6 @@ public class FTP {
       public String mode;
       public int lowPort;
       public int highPort;
-      boolean userCommandAddress;
 
       public DataChannel() { }
     }
