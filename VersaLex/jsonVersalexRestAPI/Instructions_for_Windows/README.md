@@ -1,7 +1,7 @@
 # Profile Builder Tool Instructions for VersaLex 
 (for Harmony or VLTrader, not Gen2)
 
-##### Instructions written for Windows
+##### Instructions written for Windows, and example creating server-side user accounts
 
 ## Preparation
 
@@ -55,7 +55,7 @@ Modify the app.properties file and put in the following fields:
 
 You don't have to use the userGroup.csv. You can instead just use the userMailbox.csv and if the user group (Users host, parent level) doesn't exist it will create it. Otherwise, you can create the User group with one pass, and then run the tool again for the mailboxes.
 
-You could take host from the customer installation and plug it in to your local Harmony, and use the tool to add mailboxes to it.
+You could take host from the customer installation and plug it in to your local Harmony, and use the tool to add mailboxes and actions to it. If you do, you'll also want to copy the custom directory variables used in command set and plug them into your local Harmony (to avoid errors); the variables need to be there, but the values of them can be anything.
 
 Going the route of just using the UserMailbox.csv - edit the userGroup.csv by removing all rows except the first (headers).
 
@@ -79,6 +79,10 @@ Run the 2nd tool to build the connections in the local Harmony:
 
 Launch Harmony native UI, spot check to look to see that Users and mailboxes and actions were created.
 
+If any errors, you can look at the Harmony message pane or logs to see what the issue is.
+
 Find userPasswords.csv for info on the passwords for the user mailboxes that were created, share with customer and/or trading partners.
 
 Export host(s) and import into customer environment.
+
+The Profile Builder Tool can be used for creating AS2 and SFTP and FTP client connections, or adding commands to existing connections.
