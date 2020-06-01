@@ -71,8 +71,9 @@ public class JsonVersalexRestAPI {
   public static void writePassFile(String host, LinkedTreeMap connection) throws IOException {
     String username = (String) connection.get("username");
     String password = (String) getSubElement(connection, "accept.password");
+    String email = (String) connection.get("email");
     if (username != null && password != null) {
-      String lineToWrite = host + "," + username + "," + password + System.lineSeparator();
+      String lineToWrite = host + "," + username + "," + password + "," + email + System.lineSeparator();
       Files.write(Paths.get("userPasswords.csv"), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
     }
   }
