@@ -171,13 +171,14 @@ public class JsonVersalexRestAPI {
               String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
               if (this.generatePass) {
                 connection = generatePasswordForUser(connection);
-                writePassFile(host, connection);
               }
               LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
               idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newUser.get("_links")).get("self")).get("href");
               if (actions != null)
                 createActions(actions, idHref, ConnectionType.authenticator);
               System.out.println("Created " + newUser.get("username") + " with ID: " + newUser.get("id"));
+              if (this.generatePass)
+                writePassFile(host, connection);
             } else {
               System.err.println("Host (" + connection.get("host") + ") that was specified in " + connection.get("alias") + " could not be found");
             }
