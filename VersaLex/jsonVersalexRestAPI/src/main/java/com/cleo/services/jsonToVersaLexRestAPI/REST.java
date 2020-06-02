@@ -123,6 +123,7 @@ public class REST {
     return this.authToken;
   }
 
+  private static Gson gson = new Gson();
   public String executeHttpRequest(HttpRequestBase httpRequest, int successCode) throws Exception {
     HttpClient httpClient = REST.getDefaultHTTPClient();
     if (this.authToken != null)
@@ -134,8 +135,11 @@ public class REST {
         return EntityUtils.toString(response.getEntity());
       } else {
         String msg = "Failed HTTP Request";
-        if (response.getEntity() != null)
-          msg += ": " + EntityUtils.toString(response.getEntity());
+        if (response.getEntity() != null) {
+          Object exMsg = gson.fromJson(EntityUtils.toString(response.getEntity()), LinkedTreeMap.class).get("message");
+          if (exMsg != null)
+          msg += ": " + exMsg;
+        }
         throw new Exception(msg);
       }
     } finally {
@@ -154,9 +158,13 @@ public class REST {
     return versalexRestResponse;
   }
 
+  private static HttpClient defaultHTTPClient = null;
   public static HttpClient getDefaultHTTPClient() {
-    return HttpClients.custom()
+    if (defaultHTTPClient != null)
+      return defaultHTTPClient;
+    defaultHTTPClient = HttpClients.custom()
             .setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
+    return defaultHTTPClient;
   }
 
   public static String makeUserUrl(String authenticator) {

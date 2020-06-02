@@ -4,15 +4,18 @@ import com.cleo.services.jsonToVersaLexRestAPI.POJO.VersalexCollectionResponse;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,7 +24,12 @@ public class JsonVersalexRestAPI {
   private REST restClient;
   private Gson gson;
 
+  // Timestamp to be added to filenames when outputting to files
+  private String fileTime = new SimpleDateFormat("hhmmss").format(Calendar.getInstance().getTime());
+
   private boolean generatePass;
+
+  private HashMap<String, String> authCache = new HashMap<>();
 
   public enum ConnectionType {
     connection,
@@ -68,13 +76,13 @@ public class JsonVersalexRestAPI {
     return connection;
   }
 
-  public static void writePassFile(String host, LinkedTreeMap connection) throws IOException {
+  public void writePassFile(String host, LinkedTreeMap connection) throws IOException {
     String username = (String) connection.get("username");
     String password = (String) getSubElement(connection, "accept.password");
     String email = (String) connection.get("email");
     if (username != null && password != null) {
       String lineToWrite = host + "," + username + "," + password + "," + email + System.lineSeparator();
-      Files.write(Paths.get("userPasswords.csv"), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+      Files.write(Paths.get(String.format("userPasswords_%s.csv", this.fileTime)), lineToWrite.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
     }
   }
 
@@ -137,7 +145,11 @@ public class JsonVersalexRestAPI {
   public void processFile(String jsonFile) throws IOException {
     LinkedTreeMap[] connectionEntries = gson.fromJson(new String(Files.readAllBytes(Paths.get(jsonFile))), LinkedTreeMap[].class);
     String idHref = null;
+    ArrayList<LinkedTreeMap> failedEntries = new ArrayList<>();
+    ArrayList<String> failedMessages = new ArrayList<>();
+    int successCount = 0;
     for (LinkedTreeMap connection : connectionEntries) {
+      LinkedTreeMap origConnection = gson.fromJson(gson.toJson(connection), LinkedTreeMap.class);
       try {
         LinkedTreeMap actions;
         if (connection.get("actions") instanceof ArrayList) {
@@ -155,29 +167,36 @@ public class JsonVersalexRestAPI {
         if (connection.get("type") == null) {
           String authId = null;
           if (connection.get("host") != null) {
-            VersalexCollectionResponse authenticatorsResponse = restClient.getAuthenticators("alias eq \"" + connection.get("host") + "\"");
-            if (authenticatorsResponse.getCount() == 0) {
-              // Make authenticator because one did not exists
-              LinkedTreeMap authFromFile = fixIntDouble(gson.fromJson(Resources.toString(Resources.getResource("authenticator_bare.txt"), Charsets.UTF_8), LinkedTreeMap.class));
-              authFromFile.put("alias", connection.get("host"));
-              LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(authFromFile));
-              authId = (String) newAuth.get("id");
-            }
-            if (authenticatorsResponse.getCount() == 1) {
-              authId = (String) ((LinkedTreeMap) authenticatorsResponse.getResources().get(0)).get("id");
+            if (! authCache.containsKey(connection.get("host"))) {
+              VersalexCollectionResponse authenticatorsResponse = restClient.getAuthenticators("alias eq \"" + connection.get("host") + "\"");
+              if (authenticatorsResponse.getCount() == 0) {
+                // Make authenticator because one did not exists
+                LinkedTreeMap authFromFile = fixIntDouble(gson.fromJson(Resources.toString(Resources.getResource("authenticator_bare.txt"), Charsets.UTF_8), LinkedTreeMap.class));
+                authFromFile.put("alias", connection.get("host"));
+                LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(authFromFile));
+                authId = (String) newAuth.get("id");
+                if (authId != null)
+                  authCache.put((String) connection.get("host"), authId);
+              }
+              if (authenticatorsResponse.getCount() == 1) {
+                authId = (String) ((LinkedTreeMap) authenticatorsResponse.getResources().get(0)).get("id");
+              }
+            } else {
+              authId = (String)authCache.get(connection.get("host"));
             }
             if (authId != null) {
               // Make user
               String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
               if (this.generatePass) {
                 connection = generatePasswordForUser(connection);
-                writePassFile(host, connection);
               }
               LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
               idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newUser.get("_links")).get("self")).get("href");
               if (actions != null)
                 createActions(actions, idHref, ConnectionType.authenticator);
               System.out.println("Created " + newUser.get("username") + " with ID: " + newUser.get("id"));
+              if (this.generatePass)
+                writePassFile(host, connection);
             } else {
               System.err.println("Host (" + connection.get("host") + ") that was specified in " + connection.get("alias") + " could not be found");
             }
@@ -201,10 +220,29 @@ public class JsonVersalexRestAPI {
           if (actions != null)
             createActions(actions, idHref, ConnectionType.connection);
         }
+        successCount++;
       } catch (Exception ex) {
-        ex.printStackTrace();
         System.out.println("Failed to create host : " + ex.getMessage());
+        String alias = "";
+        if (connection.get("host") != null)
+          alias = (String)connection.get("host");
+        else if (connection.get("alias") != null)
+          alias = (String)connection.get("alias");
+        else
+          alias = (String)connection.get("username");
+        failedMessages.add(alias + ": " + ex.getMessage());
+        failedEntries.add(origConnection);
+
       }
+    }
+    if (failedEntries.size() > 0) {
+      Gson gsonPretty = new GsonBuilder().setPrettyPrinting().create();
+      Files.write(Paths.get(String.format("failed_request_%s.json", this.fileTime)), gsonPretty.toJson(failedEntries).getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+    }
+    System.out.println(String.format("There were %d successful requests", successCount));
+    System.out.println(String.format("There were %d failed requests:", failedMessages.size()));
+    for (String msg : failedMessages) {
+      System.out.println(msg);
     }
   }
 
