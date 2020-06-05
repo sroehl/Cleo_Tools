@@ -14,6 +14,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
@@ -67,11 +68,20 @@ public class REST {
     return accessToken.access_token;
   }
 
-  public VersalexCollectionResponse getConnections() throws Exception {
+  public VersalexCollectionResponse getConnections(String filter) throws Exception {
     HttpGet httpGetConnections = new HttpGet(this.versalexUrl + CONNECTIONS_URL);
+    URI uri = new URIBuilder(httpGetConnections.getURI()).addParameter("filter", filter).build();
+    httpGetConnections.setURI(uri);
 
     String result = executeHttpRequest(httpGetConnections, 200);
     return REST.getVersalexConnectionResponse(result);
+  }
+
+  public LinkedTreeMap getLink(String link) throws Exception {
+    HttpGet httpGetLink = new HttpGet(this.baseUrl + link);
+
+    String result = executeHttpRequest(httpGetLink, 200);
+    return gson.fromJson(result, LinkedTreeMap.class);
   }
 
   public VersalexCollectionResponse getAuthenticators(String filter) throws Exception {
@@ -109,6 +119,20 @@ public class REST {
     return true;
   }
 
+  public String getUserHref(String alias) {
+    // TODO: Implement this
+    return "";
+  }
+
+  public String getHostHref(String alias) throws Exception {
+    VersalexCollectionResponse connections = this.getConnections(String.format("alias eq \"%s\"", alias));
+    if (connections.getCount() != 1)
+      throw new Exception(String.format("More than one host found with alias '%s'", alias));
+
+    String id = (String)connections.getResources().get(0).get("id");
+    return String.format("/api/connections/%s", id);
+  }
+
   public LinkedTreeMap postJSON(String json, String url) throws Exception {
     HttpPost httpConnectionPost = new HttpPost(url);
     httpConnectionPost.setEntity(new StringEntity(json));
@@ -116,6 +140,15 @@ public class REST {
 
     String result = executeHttpRequest(httpConnectionPost, 201);
 
+    return REST.getJsonResponse(result);
+  }
+
+  public LinkedTreeMap putJSON(String json, String url) throws Exception {
+    HttpPut httpConnectionPut = new HttpPut(this.baseUrl + url);
+    httpConnectionPut.setEntity(new StringEntity(json));
+    httpConnectionPut.addHeader("content-type", "application/json");
+
+    String result = executeHttpRequest(httpConnectionPut, 200);
     return REST.getJsonResponse(result);
   }
 

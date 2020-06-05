@@ -28,6 +28,7 @@ public class JsonVersalexRestAPI {
   private String fileTime = new SimpleDateFormat("hhmmss").format(Calendar.getInstance().getTime());
 
   private boolean generatePass;
+  private boolean update;
 
   private HashMap<String, String> authCache = new HashMap<>();
 
@@ -142,6 +143,22 @@ public class JsonVersalexRestAPI {
     return connectionTreeMap;
   }
 
+  public LinkedTreeMap updateConnection(String link, LinkedTreeMap<String, Object> updates) throws Exception {
+    LinkedTreeMap connection = restClient.getLink(link);
+
+    for (Map.Entry<String, Object> entry : updates.entrySet()) {
+      if (entry.getValue().getClass().getName().equals("com.google.gson.internal.LinkedTreeMap")) {
+        connection.put(entry.getKey(), fixIntDouble((LinkedTreeMap<String, Object>) entry.getValue()));
+      } else if (entry.getValue().getClass().getName().equals("java.lang.Double")) {
+        connection.put(entry.getKey(), ((Double) entry.getValue()).intValue());
+      } else {
+        connection.put(entry.getKey(), entry.getValue());
+      }
+    }
+    connection.remove("host");
+    return restClient.putJSON(gson.toJson(connection), link);
+  }
+
   public void processFile(String jsonFile) throws IOException {
     LinkedTreeMap[] connectionEntries = gson.fromJson(new String(Files.readAllBytes(Paths.get(jsonFile))), LinkedTreeMap[].class);
     String idHref = null;
@@ -173,8 +190,11 @@ public class JsonVersalexRestAPI {
                 // Make authenticator because one did not exists
                 LinkedTreeMap authFromFile = fixIntDouble(gson.fromJson(Resources.toString(Resources.getResource("authenticator_bare.txt"), Charsets.UTF_8), LinkedTreeMap.class));
                 authFromFile.put("alias", connection.get("host"));
-                LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(authFromFile));
-                authId = (String) newAuth.get("id");
+                // Skip creating an authenticator if we are supposed to just be updating
+                if (!this.update) {
+                  LinkedTreeMap newAuth = restClient.createAuthenticator(gson.toJson(authFromFile));
+                  authId = (String) newAuth.get("id");
+                }
                 if (authId != null)
                   authCache.put((String) connection.get("host"), authId);
               }
@@ -185,18 +205,25 @@ public class JsonVersalexRestAPI {
               authId = (String)authCache.get(connection.get("host"));
             }
             if (authId != null) {
-              // Make user
-              String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
-              if (this.generatePass) {
-                connection = generatePasswordForUser(connection);
+              if (this.update) {
+                //Update user
+                String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
+                idHref = restClient.getUserHref(host);
+                updateConnection(idHref, connection);
+              } else {
+                // Make user
+                String host = (String) connection.remove("host");  // This is added just for this tool, not part of actual VersaLex JSON
+                if (this.generatePass) {
+                  connection = generatePasswordForUser(connection);
+                }
+                LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
+                idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newUser.get("_links")).get("self")).get("href");
+                System.out.println("Created " + newUser.get("username") + " with ID: " + newUser.get("id"));
+                if (this.generatePass)
+                  writePassFile(host, connection);
               }
-              LinkedTreeMap newUser = restClient.createUser(gson.toJson(connection), authId);
-              idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newUser.get("_links")).get("self")).get("href");
               if (actions != null)
                 createActions(actions, idHref, ConnectionType.authenticator);
-              System.out.println("Created " + newUser.get("username") + " with ID: " + newUser.get("id"));
-              if (this.generatePass)
-                writePassFile(host, connection);
             } else {
               System.err.println("Host (" + connection.get("host") + ") that was specified in " + connection.get("alias") + " could not be found");
             }
@@ -212,17 +239,22 @@ public class JsonVersalexRestAPI {
         } else {
           //Make connection (normal host)
           connection = fixIntDouble(connection);
-          LinkedTreeMap newconnection = restClient.createConnection(gson.toJson(connection));
-          newconnection = fixIntDouble(newconnection);
-          idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newconnection.get("_links")).get("self")).get("href");
-          deleteActions(newconnection);
-          System.out.println("Created " + newconnection.get("alias") + " with ID: " + newconnection.get("id"));
+          if (this.update) {
+            idHref = restClient.getHostHref((String) connection.get("host"));
+            updateConnection(idHref, connection);
+          } else {
+            LinkedTreeMap newconnection = restClient.createConnection(gson.toJson(connection));
+            newconnection = fixIntDouble(newconnection);
+            idHref = (String) ((LinkedTreeMap) ((LinkedTreeMap) newconnection.get("_links")).get("self")).get("href");
+            deleteActions(newconnection);
+            System.out.println("Created " + newconnection.get("alias") + " with ID: " + newconnection.get("id"));
+          }
           if (actions != null)
             createActions(actions, idHref, ConnectionType.connection);
         }
         successCount++;
       } catch (Exception ex) {
-        System.out.println("Failed to create host : " + ex.getMessage());
+        System.out.println("Failed to create/update host : " + ex.getMessage());
         String alias = "";
         if (connection.get("host") != null)
           alias = (String)connection.get("host");
@@ -266,9 +298,10 @@ public class JsonVersalexRestAPI {
     return newTreeMap;
   }
 
-  public JsonVersalexRestAPI(REST restClient, boolean generatePass) {
+  public JsonVersalexRestAPI(REST restClient, boolean generatePass, boolean update) {
     this.restClient = restClient;
     this.gson = new Gson();
     this.generatePass = generatePass;
+    this.update = update;
   }
 }

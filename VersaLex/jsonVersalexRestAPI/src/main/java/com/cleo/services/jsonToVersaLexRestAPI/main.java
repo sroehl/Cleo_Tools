@@ -72,6 +72,13 @@ public class main {
             .build();
     options.addOption(genPassOption);
 
+    Option updateOption = Option.builder()
+            .longOpt("update")
+            .desc("Updates existing hosts")
+            .required(false)
+            .build();
+    options.addOption(updateOption);
+
     options.addOption(helpOption);
 
     return options;
@@ -111,7 +118,7 @@ public class main {
       System.out.println("Failed to create REST Client: " + ex.getMessage());
       System.exit(-1);
     }
-    JsonVersalexRestAPI jsonVersalexRestAPI = new JsonVersalexRestAPI(restClient, cmd.hasOption("generate-pass"));
+    JsonVersalexRestAPI jsonVersalexRestAPI = new JsonVersalexRestAPI(restClient, cmd.hasOption("generate-pass"), cmd.hasOption("update"));
     if (cmd.getOptionValue("file") != null) {
       jsonVersalexRestAPI.processFile(cmd.getOptionValue("file"));
     }

@@ -14,6 +14,7 @@ To run it you will need to run `java -jar JsonToVersalexRestAPI` with the follow
     -p,--password <PASSWORD>   Password
        --port <PORT>           VersaLex HTTP Port
     -u,--username <USERNAME>   Username
+    --update                   Updates connections instead of creating new ones
 ```
 
 ### Notes about JSON format
