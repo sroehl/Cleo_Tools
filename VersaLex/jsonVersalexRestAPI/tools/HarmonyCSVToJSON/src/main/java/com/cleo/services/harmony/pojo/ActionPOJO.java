@@ -1,10 +1,12 @@
 package com.cleo.services.harmony.pojo;
 
-public class Action {
+
+public class ActionPOJO {
   public String alias;
   public String commands[];
+  public String schedule;
 
-  public Action() {
+  public ActionPOJO() {
   }
 
 }

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.cleo.services.harmony.pojo.AS2;
-import com.cleo.services.harmony.pojo.Action;
+import com.cleo.services.harmony.pojo.ActionPOJO;
 import com.cleo.services.harmony.pojo.SFTP;
 import com.cleo.services.harmony.pojo.FTP;
 import com.google.common.base.Charsets;
@@ -119,23 +119,20 @@ public class ConvertCSVToHarmonyJSON {
 	}
 
 	private static List parseClientFile(String filename, Types type) {
-		HeaderColumnNameMappingStrategy mailboxStrategy = new HeaderColumnNameMappingStrategy<>();
+		Class targetClass = null;
+		com.cleo.services.harmony.CSVReader reader;
 		if (type.equals(Types.AS2))
-			mailboxStrategy.setType(AS2CSV.class);
+			targetClass = AS2CSV.class;
 		else if (type.equals(Types.SFTP))
-			mailboxStrategy.setType(SFTPCSV.class);
+			targetClass = SFTPCSV.class;
 		else if (type.equals(Types.FTP))
-			mailboxStrategy.setType(FTPCSV.class);
-		CSVReader reader2 = null;
+			targetClass = FTPCSV.class;
 		try {
-			reader2 = new CSVReader(new FileReader(filename));
-		} catch (FileNotFoundException e) {
+			reader = new com.cleo.services.harmony.CSVReader(filename, targetClass);
+			return reader.readFile();
+		} catch (Exception e) {
 			return new ArrayList<>();
 		}
-		CsvToBean csvToBean = new CsvToBean();
-		csvToBean.setCsvReader(reader2);
-		csvToBean.setMappingStrategy(mailboxStrategy);
-		return csvToBean.parse();
 	}
 
 	protected static List<JsonElement> createAS2Hosts(String filename) {
@@ -157,22 +154,29 @@ public class ConvertCSVToHarmonyJSON {
 			as2Host.outgoing.storage.sentbox = csv.getSentbox();
 			as2Host.incoming.storage.inbox = csv.getInbox();
 			as2Host.incoming.storage.receivedbox = csv.getReceivedbox();
-			ArrayList<Action> actions = new ArrayList<>();
+			ArrayList<ActionPOJO> actions = new ArrayList<>();
 			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
 				&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
-				Action sendAction = new Action();
+				ActionPOJO sendAction = new ActionPOJO();
 				sendAction.alias = csv.getCreateSendName();
 				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
-				Action recAction = new Action();
+				ActionPOJO recAction = new ActionPOJO();
 				recAction.alias = csv.getCreateReceiveName();
 				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);
 				actions.add(recAction);
 			}
-			as2Host.actions = actions.toArray(new Action[]{});
+			for (Action action : csv.getActions()) {
+				ActionPOJO actionPOJO = new ActionPOJO();
+				actionPOJO.alias = action.getAlias();
+				actionPOJO.commands = action.getCommands().split(actionSeparatorRegex);
+				actionPOJO.schedule = action.getSchedule();
+				actions.add(actionPOJO);
+			}
+			as2Host.actions = actions.toArray(new ActionPOJO[]{});
 			hosts.add(gson.toJsonTree(as2Host));
 		}
 		return hosts;
@@ -193,22 +197,22 @@ public class ConvertCSVToHarmonyJSON {
 			sftpHost.outgoing.storage.sentbox = csv.getSentbox();
 			sftpHost.incoming.storage.inbox = csv.getInbox();
 			sftpHost.incoming.storage.receivedbox = csv.getReceivedbox();
-			ArrayList<Action> actions = new ArrayList<>();
+			ArrayList<ActionPOJO> actions = new ArrayList<>();
 			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
 							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
-				Action sendAction = new Action();
+				ActionPOJO sendAction = new ActionPOJO();
 				sendAction.alias = csv.getCreateSendName();
 				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);;
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
-				Action recAction = new Action();
+				ActionPOJO recAction = new ActionPOJO();
 				recAction.alias = csv.getCreateReceiveName();
 				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);;
 				actions.add(recAction);
 			}
-			sftpHost.actions = actions.toArray(new Action[]{});
+			sftpHost.actions = actions.toArray(new ActionPOJO[]{});
 			hosts.add(gson.toJsonTree(sftpHost));
 		}
 		return hosts;
@@ -233,22 +237,22 @@ public class ConvertCSVToHarmonyJSON {
 			ftpHost.outgoing.storage.sentbox = csv.getSentbox();
 			ftpHost.incoming.storage.inbox = csv.getInbox();
 			ftpHost.incoming.storage.receivedbox = csv.getReceivedbox();
-			ArrayList<Action> actions = new ArrayList<>();
+			ArrayList<ActionPOJO> actions = new ArrayList<>();
 			if (csv.getCreateSendName() != null && !csv.getCreateSendName().isEmpty()
 							&& csv.getActionSend() != null && ! csv.getActionSend().isEmpty()){
-				Action sendAction = new Action();
+				ActionPOJO sendAction = new ActionPOJO();
 				sendAction.alias = csv.getCreateSendName();
 				sendAction.commands = csv.getActionSend().split(actionSeparatorRegex);;
 				actions.add(sendAction);
 			}
 			if (csv.getCreateReceiveName() != null && !csv.getCreateReceiveName().isEmpty()
 							&& csv.getActionReceive() != null && ! csv.getActionReceive().isEmpty()){
-				Action recAction = new Action();
+				ActionPOJO recAction = new ActionPOJO();
 				recAction.alias = csv.getCreateReceiveName();
 				recAction.commands = csv.getActionReceive().split(actionSeparatorRegex);;
 				actions.add(recAction);
 			}
-			ftpHost.actions = actions.toArray(new Action[]{});
+			ftpHost.actions = actions.toArray(new ActionPOJO[]{});
 			hosts.add(gson.toJsonTree(ftpHost));
 		}
 		return hosts;

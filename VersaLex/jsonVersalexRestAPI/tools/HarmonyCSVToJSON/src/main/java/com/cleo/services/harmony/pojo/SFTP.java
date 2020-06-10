@@ -7,7 +7,7 @@ public class SFTP {
   public SFTP.Incoming incoming;
   public SFTP.Outgoing outgoing;
   public SFTP.Connect connect;
-  public Action[] actions;
+  public ActionPOJO[] actions;
 
   public SFTP(){
     this.incoming = new SFTP.Incoming();

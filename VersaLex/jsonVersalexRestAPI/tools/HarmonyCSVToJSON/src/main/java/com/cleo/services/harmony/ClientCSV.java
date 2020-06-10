@@ -1,5 +1,6 @@
 package com.cleo.services.harmony;
 
+import com.cleo.services.harmony.Action;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,4 +18,6 @@ public class ClientCSV {
   private String sentbox;
   @Getter@Setter
   private String receivedbox;
+  @Getter@Setter
+  private Action[] actions;
 }

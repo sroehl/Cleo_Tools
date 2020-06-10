@@ -10,7 +10,7 @@ public class AS2 {
   public AS2.Incoming incoming;
   public AS2.Outgoing outgoing;
   public AS2.Connect connect;
-  public Action[] actions;
+  public ActionPOJO[] actions;
 
   public AS2(){
     this.accept = new AS2.Accept();

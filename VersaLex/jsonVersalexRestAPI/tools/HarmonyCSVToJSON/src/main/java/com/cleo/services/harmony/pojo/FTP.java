@@ -7,7 +7,7 @@ public class FTP {
   public FTP.Incoming incoming;
   public FTP.Outgoing outgoing;
   public FTP.Connect connect;
-  public Action[] actions;
+  public ActionPOJO[] actions;
 
   public FTP(){
     this.incoming = new FTP.Incoming();

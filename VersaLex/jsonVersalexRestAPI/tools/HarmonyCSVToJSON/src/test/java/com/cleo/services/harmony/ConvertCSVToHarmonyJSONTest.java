@@ -11,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ConvertCSVToHarmonyJSONTest {
 
@@ -42,6 +43,8 @@ public class ConvertCSVToHarmonyJSONTest {
 
     try {
       List<JsonElement> hosts = ConvertCSVToHarmonyJSON.createAS2Hosts(tempFile.getPath());
+      if (hosts.size() != 1)
+        fail("Invalid number of hosts created: " + hosts.size());
       for (JsonElement element : hosts) {
         JsonObject jsonObject = element.getAsJsonObject();
         assertEquals(alias, jsonObject.get("alias").getAsString());
@@ -82,15 +85,20 @@ public class ConvertCSVToHarmonyJSONTest {
     String activeHighPort = "6100";
     String actionAlias = "send";
     String actionCmd = "PUT -DEL test/*";
+    String action1Alias = "action1";
+    String action1Cmd = "PUT -DEL test2/*";
+    String action1Schedule = "on file continuously";
     File tempFile = File.createTempFile("ftptest", ".csv");
     String ftpCsv = Files.readAllLines(Paths.get("templates", "FTPTemplate.csv")).get(0);
     //String ftpCsv = "type,alias,inbox,outbox,sentbox,receivedbox,host,port,username,password,datatype,channelmode,activelowport,activehighport,CreateSendName,CreateReceiveName,ActionSend,ActionReceive,Schedule_Send,Schedule_Receive";
-    ftpCsv += String.format("\nFTP,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,,%s,,,", alias, inbox, outbox, sentbox, recbox, host, port, username, password, dataType, channelMode,
-            activeLowPort, activeHighPort, actionAlias, actionCmd);
+    ftpCsv += String.format("\nFTP,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,,%s,,,%s,%s,%s", alias, inbox, outbox, sentbox, recbox, host, port, username, password, dataType, channelMode,
+            activeLowPort, activeHighPort, actionAlias, actionCmd, action1Alias, action1Cmd, action1Schedule);
     Files.write(Paths.get(tempFile.getPath()), ftpCsv.getBytes(), StandardOpenOption.WRITE);
 
     try {
       List<JsonElement> hosts = ConvertCSVToHarmonyJSON.createFTPHosts(tempFile.getPath());
+      if (hosts.size() != 1)
+        fail("Invalid number of hosts created: " + hosts.size());
       for (JsonElement element : hosts) {
         JsonObject jsonObject = element.getAsJsonObject();
         assertEquals(alias, jsonObject.get("alias").getAsString());
@@ -106,8 +114,16 @@ public class ConvertCSVToHarmonyJSONTest {
         assertEquals(channelMode, jsonObject.getAsJsonObject("connect").getAsJsonObject("dataChannel").get("mode").getAsString());
         assertEquals(activeLowPort, jsonObject.getAsJsonObject("connect").getAsJsonObject("dataChannel").get("lowPort").getAsString());
         assertEquals(activeHighPort, jsonObject.getAsJsonObject("connect").getAsJsonObject("dataChannel").get("highPort").getAsString());
-        assertEquals(actionAlias, jsonObject.getAsJsonArray("actions").get(0).getAsJsonObject().get("alias").getAsString());
-        assertEquals(actionCmd, jsonObject.getAsJsonArray("actions").get(0).getAsJsonObject().get("commands").getAsString());
+        for (JsonElement action : jsonObject.getAsJsonArray("actions")) {
+          JsonObject actionObject = action.getAsJsonObject();
+          if (actionObject.get("alias").getAsString().equals(actionAlias)) {
+            assertEquals(actionCmd, actionObject.get("commands").getAsString());
+          } else if (actionObject.get("alias").getAsString().equals("test")) {
+            assertEquals(action1Cmd, actionObject.get("commands").getAsString());
+          } else {
+            fail(String.format("Action '{}' should not have been created", actionObject.get("alias")));
+          }
+        }
       }
     } finally {
       tempFile.delete();
@@ -135,6 +151,8 @@ public class ConvertCSVToHarmonyJSONTest {
 
     try {
       List<JsonElement> hosts = ConvertCSVToHarmonyJSON.createSFTPHosts(tempFile.getPath());
+      if (hosts.size() != 1)
+        fail("Invalid number of hosts created: " + hosts.size());
       for (JsonElement element : hosts) {
         JsonObject jsonObject = element.getAsJsonObject();
         assertEquals(alias, jsonObject.get("alias").getAsString());
