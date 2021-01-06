@@ -5,7 +5,7 @@
 
 ## Preparation
 
-Install and configure Java and [Maven](https://howtodoinjava.com/maven/how-to-install-maven-on-windows/)
+Install and configure [Java](https://adoptopenjdk.net/installation.html?variant=openjdk8&jvmVariant=hotspot#x64_win-jdk) and [Maven](https://howtodoinjava.com/maven/how-to-install-maven-on-windows/)
 
 - test by running `java -version`
 
