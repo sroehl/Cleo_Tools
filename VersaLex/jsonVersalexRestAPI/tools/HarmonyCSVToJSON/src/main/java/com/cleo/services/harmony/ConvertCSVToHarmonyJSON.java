@@ -281,7 +281,7 @@ public class ConvertCSVToHarmonyJSON {
 			}
 			((LinkedTreeMap)authFromFile.get("accept")).put("whitelist",wl);
 		}
-        authFromFile.put("notes", mailboxCSV.getHostNotes());
+        authFromFile.put("notes", mailboxCSV.getMailboxNotes());
 		if(!mailboxCSV.getOtherFolder().isEmpty()) {
 			for(String path : mailboxCSV.getOtherFolder().split(";")) {
 				LinkedTreeMap tr = new LinkedTreeMap();
