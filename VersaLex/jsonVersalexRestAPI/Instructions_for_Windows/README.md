@@ -17,11 +17,11 @@ Install [Git For Windows](https://www.atlassian.com/git/tutorials/install-git#wi
 
 Install & license Harmony
 
-- Build the config on a local Harmony, then export and import into the Cloud or Agent
 - Start Harmony service
 - In VLNavigator add the administrators group to have system privelege so you have to login to Harmony as administrator with default administrative password
 - Start Harmony native UI to open it up
 - Configure %HarmonyRoot% as custom directory macro variable
+- Note: using the steps below, the goal is to build the config on a local Harmony, then export and import into the Cloud or Agent
 
 copy contents of [repo.sh](repo.sh) to C:\repo.sh
 
